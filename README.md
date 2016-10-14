@@ -1,6 +1,8 @@
 # STCK
 Simple two-way data binding for HTML/JavaScript
 
+https://jhammond045.github.io/STCK/
+
 I wondered how hard it would be to make a simple set of data binding tools that functioned similar to Angular's basic directives, so I decided to give it a shot. 
 
 Attributes supported:
