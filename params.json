@@ -1,0 +1,6 @@
+{
+  "name": "STCK",
+  "tagline": "Simple two-way data binding for HTML/JavaScript",
+  "body": "I wondered how hard it would be to make a simple set of data binding tools that functioned similar to Angular's basic directives, so I decided to give it a shot. \r\n\r\nAttributes supported:\r\n * `stck-bind`\r\n * `stck-if`\r\n * `stck-repeat` with internal `stck-bind`\r\n\r\nBells and whistles:\r\n * Two-way binding for `input`, `select`, `textarea`, etc.\r\n * One-way binding for `div`, `span`, `p`, etc.\r\n * Tries to support older browsers with the addition of `object.watch.js` (https://gist.github.com/eligrey/384583).\r\n * Deep properties are supported (e.g. `stck-bind=\"my.deep.property\"`).\r\n * Fairly efficient expression monitoring for `stck-if`.\r\n\r\nVery alpha. Almost totally untested!",
+  "note": "Don't delete this file! It's used internally to help with page regeneration."
+}
