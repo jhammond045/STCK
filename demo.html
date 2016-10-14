@@ -37,82 +37,95 @@
       <div class="inner clearfix">
         <section id="main-content">
 
-			<!-- Radio binding -->
-			<div class="alert alert-info">
-				Automatic or manual?
-			</div>
-			<div class="form-group">
-				<label>
-					<input type="radio" name="type" value="auto" stck-bind />
-					Automatic
-				</label>
-			</div>
-			<div class="form-group">
-				<label>
-					<input type="radio" name="type" value="manual" stck-bind />
-					Manual
-				</label>
-			</div>
-
-			<!-- Simple div binding -->
-			<div stck-bind="type" style="font-weight: bold;"></div>
-
-			<!-- Input binding -->
-			<input type="text" name="type" stck-bind />
-
-			<!-- Select binding -->
-			<select name="type" stck-bind />
-				<option>auto</option>
-				<option>manual</option>
-				<option>hecks</option>
-			</select>
-
-			<!-- Textarea binding -->
-			<textarea name="type" stck-bind></textarea>
-
-			<!-- Expressions and if -->
-			<div stck-if="this.type == 'auto'">
-				Auto
-			</div>
-			<div stck-if="this.type == 'manual'">
-				Manual
-			</div>
-
-			<!-- Depth properties -->
-			<div stck-bind="deep.dims.depth"></div>
-			<div stck-bind="deep.dims.width"></div>
-
-			<!-- Repeating group with sub-bindings -->
-			<div stck-repeat="repeating">
-				<div stck-bind="i"></div>
-				<div stck-bind="name"></div>
-			</div>
-
-			<!-- if with JS expression -->
-			<div stck-if="Math.floor(Math.random()*2)==1">
-				Random
-			</div>
-
-			<script type="text/javascript">
-
-				// Expose global scope so we can play with it in console
-				var stck;
-
-				$(document).ready(function() {
-
-					// Set things up
-					stck = new STCK();
-
-					// Populate our repeating array
-					stck.repeating = [ { name: "Bells" }, { name: "Whistle" }];
-
-					// Set properties for deep-property vars
-					stck.deep.dims.depth = 45;
-					stck.deep.dims.width = 23;
-				});
-
-			</script>
+		<h2>Super Messy Demo</h2>
+		<p>
+			View the source or view demo.html in the repository to see how it works.
+		</p>
+		<p>
+			Also, open the console and try this:
+		</p>
+		<p><code>stck.type = 'auto';</code></p>
+		<p><code>stck.type = 'manual';</code></p>
+		<p>
+			...and watch the magic happen.
+		</p>
 		
+		<!-- Radio binding -->
+		<div class="alert alert-info">
+			Automatic or manual?
+		</div>
+		<div class="form-group">
+			<label>
+				<input type="radio" name="type" value="auto" stck-bind />
+				Automatic
+			</label>
+		</div>
+		<div class="form-group">
+			<label>
+				<input type="radio" name="type" value="manual" stck-bind />
+				Manual
+			</label>
+		</div>
+
+		<!-- Simple div binding -->
+		<div stck-bind="type" style="font-weight: bold;"></div>
+
+		<!-- Input binding -->
+		<input type="text" name="type" stck-bind />
+
+		<!-- Select binding -->
+		<select name="type" stck-bind />
+			<option>auto</option>
+			<option>manual</option>
+			<option>hecks</option>
+		</select>
+
+		<!-- Textarea binding -->
+		<textarea name="type" stck-bind></textarea>
+
+		<!-- Expressions and if -->
+		<div stck-if="this.type == 'auto'">
+			Auto
+		</div>
+		<div stck-if="this.type == 'manual'">
+			Manual
+		</div>
+
+		<!-- Depth properties -->
+		<div stck-bind="deep.dims.depth"></div>
+		<div stck-bind="deep.dims.width"></div>
+
+		<!-- Repeating group with sub-bindings -->
+		<div stck-repeat="repeating">
+			<div stck-bind="i"></div>
+			<div stck-bind="name"></div>
+		</div>
+
+		<!-- if with JS expression -->
+		<div stck-if="Math.floor(Math.random()*2)==1">
+			Random
+		</div>
+
+		<script type="text/javascript">
+
+			// Expose global scope so we can play with it in console
+			var stck;
+
+			$(document).ready(function() {
+
+				// Set things up
+				stck = new STCK();
+
+				// Populate our repeating array
+				stck.repeating = [ { name: "Bells" }, { name: "Whistle" }];
+
+				// Set properties for deep-property vars
+				stck.deep.dims.depth = 45;
+				stck.deep.dims.width = 23;
+			});
+
+		</script>
+
         </section>
 
         <aside id="sidebar">
