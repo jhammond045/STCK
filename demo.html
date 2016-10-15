@@ -51,6 +51,7 @@
 		</p>
 		
 		<!-- Radio binding -->
+		<h3>Radio Binding</h3>
 		<div class="alert alert-info">
 			Automatic or manual?
 		</div>
@@ -68,22 +69,41 @@
 		</div>
 
 		<!-- Simple div binding -->
+		<h3>Simple div</h3>
 		<div stck-bind="type" style="font-weight: bold;"></div>
 
 		<!-- Input binding -->
+		<h3>Input</h3>
 		<input type="text" name="type" stck-bind />
+		
+		<h3>Input with change event</h3>
+		<input type="text" name="type" stck-bind stck-change="alert('New value: ' + this.type);" />
 
 		<!-- Select binding -->
+		<h3>Select Binding</h3>
 		<select name="type" stck-bind />
 			<option>auto</option>
 			<option>manual</option>
-			<option>hecks</option>
+			<option>thirdoption</option>
 		</select>
+          
+        <!-- Events -->
+          <h3>stck-click event</h3>
+          <button stck-click="this.type = 'auto';">Select Auto</button>
+          <button stck-click="this.type = 'manual';">Select Manual</button>
+          
+          <h3>stck-focus event</h3>
+          <input type="text" stck-focus="this.type = 'focused';" placeholder="focus to change value to 'focused'" />
+          
+          <h3>stck-click call other function</h3>
+          <button stck-click="this.myFunction();">Click Me</button>
 
 		<!-- Textarea binding -->
+	        <h3>Textarea Binding</h3>
 		<textarea name="type" stck-bind></textarea>
 
 		<!-- Expressions and if -->
+	        <h3>stck-if Expressions</h3>
 		<div stck-if="this.type == 'auto'">
 			Auto
 		</div>
@@ -92,16 +112,24 @@
 		</div>
 
 		<!-- Depth properties -->
+	        <h3>Depth properties</h3>
+	      <h4><code>deep.dims.depth</code></h4>
 		<div stck-bind="deep.dims.depth"></div>
+	      <h4><code>deep.dims.width</code></h4>
 		<div stck-bind="deep.dims.width"></div>
 
 		<!-- Repeating group with sub-bindings -->
+	        <h3>Repeating group</h3>
+          <h4><code>repeating</code></h4>
 		<div stck-repeat="repeating">
-			<div stck-bind="i"></div>
-			<div stck-bind="name"></div>
+			<div>
+				Index: <span stck-bind="i"></span>
+				Name: <span stck-bind="name"></span>
+            </div>
 		</div>
 
 		<!-- if with JS expression -->
+          <h3>stck-if with JS expression</h3>
 		<div stck-if="Math.floor(Math.random()*2)==1">
 			Random
 		</div>
@@ -122,6 +150,20 @@
 				// Set properties for deep-property vars
 				stck.deep.dims.depth = 45;
 				stck.deep.dims.width = 23;
+                
+                stck.myFunction = function() {
+                    stck.type = 'auto';
+                    setTimeout(function() {
+                        stck.type = 'manual';
+                        setTimeout(function() {
+                            stck.type = 'thirdoption';
+                            setTimeout(function() {
+                                stck.type = 'auto';
+                            }, 500);
+                        }, 500);
+                    }, 500);
+                };
+                
 			});
 
 		</script>
