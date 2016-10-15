@@ -10,6 +10,11 @@ Attributes supported:
  * `stck-if`
  * `stck-repeat` with internal `stck-bind`
 
+Event bindings:
+ * `stck-click`
+ * `stck-focus`
+ * `stck-change`
+
 Bells and whistles:
  * Two-way binding for `input`, `select`, `textarea`, etc.
  * One-way binding for `div`, `span`, `p`, etc.
