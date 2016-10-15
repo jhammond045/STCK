@@ -4,32 +4,42 @@
  */
 var STCK = function(_context, _prefix) {
 
-	var context = typeof _context == 'string' ? _context : null;
-	var prefix = typeof _prefix == 'string' ? _prefix + '-' : 'stck-';
+	// Configurable things.
+	var config = {
 
-	// How frequently to query expressions for changes.
-	var expressionInterval = 200;
+		// Default context for STCK elements. Can be a DOM query or a jQuery object.
+		context: typeof _context == 'string' ? _context : null
 
-	var
+		// Default prefix for STCK special attributes.
+		, prefix: typeof _prefix == 'string' ? _prefix + '-' : 'stck-'
+
+		// How frequently to query expressions for changes.
+		, expressionInterval: 200
+	};
+
+	// Internal operational variables.
+	var run = {
 		// List of bound variables and their current values.
-		bound = {}
+		bound: {}
 
 		// List of arrays of functions to trigger when a variable's value changes.
-		, watchers = {}
+		, watchers: {}
 
 		// List of grouped radio buttons.
-		, radios = []
+		, radios: []
 
 		// List of expressions to watch for changes.
-		, expressions = []
-	;
+		, expressions: []
 
-	// List of active event timeouts to prevent infinite looping.
-	var activeEvent = {};
+		// List of active event timeouts to prevent infinite looping.
+		, activeEvent: {}
+	};
 
-	// Get all elements having the specified STCK attribute (prefix + attribute name).
+	// Get all elements having the specified STCK attribute (prefix + attribute name), and, optionally, within the
+	// specified context.
 	function $getElements(type, context) {
 
+		context = context ? context : config.context;
 		return $('[' + getAttrName(type) + ']', context);
 
 	}
@@ -37,31 +47,133 @@ var STCK = function(_context, _prefix) {
 	// Get the full attribute name of the specified STCK attribute (prefix + attribute name).
 	function getAttrName(type) {
 
-		return prefix + type;
+		return config.prefix + type;
 
 	}
 
 	// Get the value of the specified STCK attribute.
-	function getAttrValue(object, type) {
+	function getAttrValue($this, type) {
 
-		return $(object).attr(getAttrName(type));
+		return $this.attr(getAttrName(type));
 
 	}
 
-	// Set up repeating element groups.
-	$getElements('repeat').each(function() {
+	// Exception class.
+	function stckException(message, level) {
 
-		var $this = $(this), name = getAttrValue(this, 'repeat');
+		this.level = level;
+		this.message = message;
 
-		// Grab the group's HTML, wrap in a div, store in a variable, then clear it.
-		var template = '<div>' + $this.html() + '</div>';
-		$this.html('');
+		this.toString = function() {
+			return "stckException: " + this.message;
+		};
 
-		// Attach handler for value change.
-		bindHandler(name, function(name, oldValue, newValue) {
-			applyRepeat($this, template, newValue);
+	}
+
+	// Initializer.
+	function init() {
+
+		// Set up repeating element groups.
+		$getElements('repeat').each(function() {
+
+			var $this = $(this), name = getAttrValue($this, 'repeat');
+
+			// Grab the group's HTML, wrap in a div, store in a variable, then clear it.
+			var template = '<div>' + $this.html() + '</div>';
+			$this.html('');
+
+			// Attach handler for value change.
+			bindHandler(name, function(name, oldValue, newValue) {
+				applyRepeat($this, template, newValue);
+			});
 		});
-	});
+
+		// Set up bound elements.
+		$getElements('bind').each(function() {
+			var $this = $(this);
+
+			// Forms -- we bind all applicable controls within the form and don't need a name.
+			if ($this.is('form')) {
+				$this.find('input,textarea,select').each(function() {
+					bindElement($(this));
+				});
+			}
+
+			// Anything else.
+			else {
+				bindElement($this);
+			}
+		});
+
+		// Set up if-elements.
+		$getElements('if').each(function() {
+			var $this = $(this), expression = getAttrValue($this, 'if');
+
+			// Fairly simple. Bind the expression; show or hide based on expression's value.
+			bindExpression($this, expression, function($this, oldValue, newValue) {
+				if (newValue) {
+					$this.show();
+				} else {
+					$this.hide();
+				}
+			});
+		});
+
+		// Set up click events.
+		$getElements('click').each(function() {
+			var $this = $(this), expression = getAttrValue($this, 'click');
+
+			$this.click(function(e) {
+				e.preventDefault();
+				execExpression(expression);
+			});
+		});
+
+		// Set up focus events.
+		$getElements('focus').each(function() {
+			genericEventBind(this, 'focus');
+		});
+
+		// Set up change events.
+		$getElements('change').each(function() {
+			genericEventBind(this, 'change');
+		});
+
+		// Trigger our expression runner to continuously check expressions.
+		// Not super awesome from a performance perspective but it is what it is.
+		setInterval(execExpressions, config.expressionInterval);
+
+	}
+
+	function genericEventBind(that, event) {
+
+		var $this = $(that), expression = getAttrValue($this, event);
+
+		$this.bind(event, function(e) {
+			return execExpression(expression);
+		});
+
+	}
+
+	// Used to prevent race conditions. May not be needed.
+	function eventBlocked(name) {
+
+		if (run.activeEvent[name]) return true;
+
+		run.activeEvent[name] = setTimeout(function() {
+			run.activeEvent[name] = null;
+		}, 1);
+
+		return false;
+
+	}
+
+	// Mark an element as "applied."
+	function markApplied($this) {
+
+		$this.addClass('stck-applied');
+
+	}
 
 	// Apply a repeating element group's HTML.
 	function applyRepeat($this, template, value) {
@@ -76,7 +188,7 @@ var STCK = function(_context, _prefix) {
 			
 			// Look at each bound element in the template.
 			$getElements('bind', $template).each(function() {
-				var $that = $(this), name = getAttrValue(this, 'bind');
+				var $that = $(this), name = getAttrValue($that, 'bind');
 
 				// Special variable name for iterator.
 				if (name == 'i') {
@@ -97,9 +209,71 @@ var STCK = function(_context, _prefix) {
 		}
 	}
 
-	// Set up bound elements.
-	$getElements('bind').each(function() {
-		var $this = $(this), name = getAttrValue(this, 'bind');
+	// Bind an expression to an element and store it for continuous checking.
+	function bindExpression($this, expression, callerFn) {
+
+		// Construct our storage object.
+		var obj = {
+			$this: $this
+			, expression: expression
+			, lastValue: NaN
+			, callerFn: callerFn
+		};
+
+		// Give it a first run.
+		execExpression(obj);
+
+		// Add it to our array.
+		run.expressions.push(obj);
+
+		// Mark as processed.
+		markApplied($this);
+	}
+
+	// Run all stored expressions.
+	function execExpressions() {
+
+		for (var i = 0; i < run.expressions.length; i++) {
+
+			// Run the expression.
+			var value = execExpression(run.expressions[i].expression);
+
+			// If the value has changed, or if lastValue is a NaN (first run), it's significant.
+			if (value !== run.expressions[i].lastValue || isNaN(run.expressions[i].lastValue)) {
+
+				// Call our caller function. Pass the element, the last value and the new value.
+				run.expressions[i].callerFn(run.expressions[i].$this, run.expressions[i].lastValue, value);
+
+				// Persist the new value as the last value.
+				run.expressions[i].lastValue = value;
+			}
+		}
+
+	}
+
+	// Run a single expression.
+	function execExpression(expression) {
+
+		// Attach a special function to our key-value store so it can run in scope.
+		run.bound._expression = function() {
+			// This just runs the expresson's code (whatever it may be!).
+			return eval(expression);
+		};
+
+		// Run it and get the return value.
+		var returnValue = run.bound._expression();
+
+		// Remove the special function.
+		delete run.bound._expression;
+
+		// Return the expression's return value.
+		return returnValue;
+	}
+
+	// Bind an element to a variable.
+	function bindElement($this) {
+
+		var name = getAttrValue($this, 'bind');
 
 		// We can get name two ways -- in our STCK attribute or in the plain ol' "name" attribute.
 		if (!name) {
@@ -107,10 +281,10 @@ var STCK = function(_context, _prefix) {
 
 			// Complain if we can't find it.
 			if (!name) {
-				throw "STCK: can't find attribute name for " + $this[0].outerHTML;
+				throw new stckException("Can't find attribute name for " + $this[0].outerHTML);
 			}
 		}
-		
+
 		// Input controls of various species.
 		if ($this.is('input')) {
 			if ($this.attr('type') == 'radio') {
@@ -129,95 +303,15 @@ var STCK = function(_context, _prefix) {
 
 		// One-way bindings for divs and other static elements.
 		else if ($this.is('div') || $this.is('span') || $this.is('p') || $this.is('li')) {
-			bindElement($this, name);
+			bindDisplay($this, name);
 		}
 
 		// Mark as processed.
-		$this.addClass('stmt-applied');
-	});
-
-	// Set up if-elements.
-	$getElements('if').each(function() {
-		var $this = $(this), expression = getAttrValue(this, 'if');
-
-		// Fairly simple. Bind the expression; show or hide based on expression's value.
-		bindExpression($this, expression, function($this, oldValue, newValue) {
-			if (newValue) {
-				$this.show();
-			} else {
-				$this.hide();
-			}
-		});
-
-		// Mark as processed.
-		$this.addClass('stmt-applied');
-	});
-
-	// Trigger our expression runner to continuously check expressions.
-	// Not super awesome from a performance perspective but it is what it is.
-	setInterval(runExpressions, expressionInterval);
-
-	// Bind an expression to an element and store it for continuous checking.
-	function bindExpression($this, expression, callerFn) {
-
-		// Construct our storage object.
-		var obj = {
-			$this: $this
-			, expression: expression
-			, lastValue: NaN
-			, callerFn: callerFn
-		};
-
-		// Give it a first run.
-		runExpression(obj);
-
-		// Add it to our array.
-		expressions.push(obj);
-
-	}
-
-	// Run all stored expressions.
-	function runExpressions() {
-
-		for (var i = 0; i < expressions.length; i++) {
-
-			// Run the expression.
-			var value = runExpression(expressions[i].expression);
-
-			// If the value has changed, or if lastValue is a NaN (first run), it's significant.
-			if (value !== expressions[i].lastValue || isNaN(expressions[i].lastValue)) {
-
-				// Call our caller function. Pass the element, the last value and the new value.
-				expressions[i].callerFn(expressions[i].$this, expressions[i].lastValue, value);
-
-				// Persist the new value as the last value.
-				expressions[i].lastValue = value;
-			}
-		}
-
-	}
-
-	// Run a single expression.
-	function runExpression(expression) {
-
-		// Attach a special function to our key-value store so it can run in scope.
-		bound._expression = function() {
-			// This just runs the expresson's code (whatever it may be!).
-			return eval(expression);
-		};
-
-		// Run it and get the return value.
-		var returnValue = bound._expression();
-
-		// Remove the special function.
-		delete bound._expression;
-
-		// Return the expression's return value.
-		return returnValue;
+		markApplied($this);
 	}
 
 	// Bind a simple static HTML element of some kind.
-	function bindElement($this, name) {
+	function bindDisplay($this, name) {
 
 		bindHandler(name, function(name, oldValue, newValue) {
 			// When something changes, we just update the HTML.
@@ -254,8 +348,8 @@ var STCK = function(_context, _prefix) {
 	function bindRadio($this, name, sourceValue, isSelected) {
 
 		// Set up our radio list for this variable, if needed.
-		if (typeof radios[name] == 'undefined') {
-			radios[name] = [];
+		if (typeof run.radios[name] == 'undefined') {
+			run.radios[name] = [];
 		}
 
 		// If we have a selected radio, assume it's the current one and set its value.
@@ -264,18 +358,18 @@ var STCK = function(_context, _prefix) {
 		}
 
 		// Add this radio to our radio list for this variable.
-		radios[name].push({
+		run.radios[name].push({
 			$element: $this
 			, value: sourceValue
 		});
 
 		// If this is our first one in the list, attach our handler. We only need one handler per radio group.
-		if (radios[name].length == 1) {
+		if (run.radios[name].length == 1) {
 			bindHandler(name, function(name, oldValue, newValue) {
 				// Whenever there is a change, process all radios in the group.
-				for (var i = 0; i < radios[name].length; i++) {
+				for (var i = 0; i < run.radios[name].length; i++) {
 					// Set or clear value as needed.
-					radios[name][i].$element.prop('checked', newValue == radios[name][i].value);
+					run.radios[name][i].$element.prop('checked', newValue == run.radios[name][i].value);
 				}
 			});
 		}
@@ -289,15 +383,6 @@ var STCK = function(_context, _prefix) {
 		});
 	}
 
-	// Used to prevent race conditions. May not be needed.
-	function eventBlocked(name) {
-		if (activeEvent[name]) return true;
-		activeEvent[name] = setTimeout(function() {
-			activeEvent[name] = null;
-		}, 1);
-		return false;
-	}
-
 	// Watch a variable for changes and call watcher function if it changes.
 	function bindHandler(name, watcher) {
 
@@ -307,12 +392,12 @@ var STCK = function(_context, _prefix) {
 		}
 
 		// If we don't have a list of watchers for this variable yet, initialize it.
-		if (typeof watchers[name] == 'undefined') {
-			watchers[name] = [];
+		if (typeof run.watchers[name] == 'undefined') {
+			run.watchers[name] = [];
 		}
 
 		// Add the watcher function to the list of watchers for this variable.
-		watchers[name].push(function(name, oldValue, newValue) {
+		run.watchers[name].push(function(name, oldValue, newValue) {
 			watcher(name, oldValue, newValue);
 		});
 
@@ -320,36 +405,44 @@ var STCK = function(_context, _prefix) {
 		watcher(name, null, getBound(name));
 
 		// We only need to attach one watch for the entire set, so only do this once.
-		if (watchers[name].length == 1) {
+		if (run.watchers[name].length == 1) {
 
 			// Resolve the name to its actual variable in the bound variables list and watch the appropriate property.
-			(resolveBound(bound, name)).watch(resolveBoundProperty(name), function(resolvedName, oldValue, newValue) {
+			(resolveBound(run.bound, name)).watch(resolveBoundProperty(name), function(resolvedName, oldValue, newValue) {
 
-				// If we somehow got here without any watchers, bail.
-				console.log('runHandler ' + name + '/' + newValue);
-				if (typeof watchers[name] == 'undefined') return;
-
-				// Call each watcher function in the order they were added.
-				for (var i = 0; i < watchers[name].length; i++) {
-					watchers[name][i](name, oldValue, newValue);
-				}
-
+				// Run our watchers for the variable.
+				execWatchers(name, oldValue, newValue);
+				
 				// watch() expects a value.
 				return newValue;
 			});
 		}
 	}
 
+	// Run a set of watchers for the given variable.
+	function execWatchers(name, oldValue, newValue) {
+
+		if (typeof run.watchers[name] == 'undefined') return;
+
+		// Call each watcher function in the order they were added.
+		for (var i = 0; i < run.watchers[name].length; i++) {
+			run.watchers[name][i](name, oldValue, newValue);
+		}
+
+	}
+
 	// Set a variable in the bound variables list.
 	function setBound(name, value) {
 
-		resolveBound(bound, name)[resolveBoundProperty(name)] = value;
+		resolveBound(run.bound, name)[resolveBoundProperty(name)] = value;
 
 	}
 
 	// Get the value of a variable in the bound variables list.
 	function getBound(name) {
-		return resolveBound(bound, name)[name];
+
+		return resolveBound(run.bound, name)[name];
+
 	}
 
 	// Resolve a deep variable name into the appropriate object from the bound variables list.
@@ -383,17 +476,18 @@ var STCK = function(_context, _prefix) {
 
 	// Helper function for bound variable list to manually trigger an update.
 	// Necessary because watch() won't catch additions to arrays/objects.
-	bound._update = function(name) {
-		if (typeof watchers[name] == 'undefined') return;
+	run.bound._update = function(name) {
 
 		var value = getBound(name);
 
-		for (var i = 0; i < watchers[name].length; i++) {
-			watchers[name][i](name, null, value);
-		}
+		// Run each watcher for the variable.
+		execWatchers(name, null, value);
+
 	}
 
+	init();
+
 	// Give the calling method the bound variable list.
-	return bound;
+	return run.bound;
 
 };

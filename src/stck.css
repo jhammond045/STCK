@@ -1,4 +1,4 @@
 /* Hide unapplied elements */
-[stck-if]:not(.stck-applied) {
+[stck-if] {
 	display: none;
 }
